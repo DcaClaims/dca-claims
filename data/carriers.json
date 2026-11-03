@@ -1,0 +1,15 @@
+{
+  "note": "Licence of the OPERATING carrier, by IATA code: EU (includes EEA and Swiss carriers), UK, or OTHER. Codes shared by more than one operating company are marked AMBIGUOUS and always need the operating company confirmed. DRAFT: to be checked against each airline's operating licence before approval.",
+  "carriers": {
+    "LH": "EU", "LX": "EU", "OS": "EU", "SN": "EU", "EW": "EU", "4Y": "EU", "EN": "EU",
+    "AF": "EU", "KL": "EU", "HV": "EU", "TO": "EU", "AZ": "EU", "IB": "EU", "I2": "EU", "VY": "EU", "UX": "EU",
+    "TP": "EU", "A3": "EU", "OA": "EU", "LO": "EU", "AY": "EU", "SK": "EU", "EI": "EU", "BT": "EU", "OK": "EU",
+    "RO": "EU", "FB": "EU", "OU": "EU", "JU": "OTHER", "DY": "EU", "D8": "EU", "FR": "EU", "W6": "EU", "W4": "EU",
+    "EC": "EU", "X3": "EU", "DE": "EU", "V7": "EU", "XQ": "OTHER", "PC": "OTHER", "TK": "OTHER",
+    "BA": "UK", "VS": "UK", "LS": "UK", "BY": "UK", "W9": "UK", "RK": "UK", "T3": "UK", "LM": "UK",
+    "U2": "AMBIGUOUS",
+    "LY": "OTHER", "IZ": "OTHER", "6H": "OTHER", "DL": "OTHER", "UA": "OTHER", "AA": "OTHER", "AC": "OTHER",
+    "EK": "OTHER", "QR": "OTHER", "EY": "OTHER", "FZ": "OTHER", "ET": "OTHER", "MS": "OTHER", "RJ": "OTHER",
+    "PS": "OTHER", "B6": "OTHER", "SQ": "OTHER", "CX": "OTHER", "AI": "OTHER", "G9": "OTHER"
+  }
+}

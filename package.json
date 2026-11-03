@@ -1,0 +1,19 @@
+{
+  "name": "dca-claims",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DCA Claims case-management system (Milestone 1 core).",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.ts\"",
+    "db:test": "bash scripts/test-schema.sh",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "@types/node": "^22.0.0"
+  }
+}
