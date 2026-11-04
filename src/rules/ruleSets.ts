@@ -22,6 +22,12 @@ export type RuleSet = {
   cancellationNotice?: { fullNoticeDays: number; midNoticeDays: number; mid: { depEarlierMaxMin: number; arrLaterMaxMin: number }; short: { depEarlierMaxMin: number; arrLaterMaxMin: number } };
   /** ASL-style: a delay this long counts as a cancellation. */
   delayCountsAsCancellationMin?: number;
+  /**
+   * Index-linked amounts (ASL). One table per period, each with the date it applies from; amounts follow `bands`.
+   * The table in force on the flight date is used (to confirm with the lawyers which date decides).
+   * When present, these replace the band amounts.
+   */
+  datedAmounts?: { from: string; amounts: (number | null)[]; source: string }[];
   sources: { title: string; url: string }[];
   notes: string[];
 };
@@ -96,12 +102,15 @@ export const ASL_V1: RuleSet = {
   ],
   delayThresholdMin: 480,
   delayCountsAsCancellationMin: 480,
+  // Filled in by the owner from the yearly table on Kol Zchut ("פיצוי במקרה של טיסה שהתבטלה"). Empty until then.
+  datedAmounts: [],
   cancellationNotice: EU_CANCELLATION,
   sources: [
-    { title: 'Aviation Services Law (Compensation and Assistance for Flight Cancellation or Change of Conditions), 5772-2012', url: '' } // official link to be added when the text is checked,
+    { title: 'Aviation Services Law (Compensation and Assistance for Flight Cancellation or Change of Conditions), 5772-2012', url: '' }, // official link to be added when the text is checked
+    { title: 'Kol Zchut: compensation for a cancelled flight (yearly amounts)', url: 'https://www.kolzchut.org.il/he/%D7%A4%D7%99%D7%A6%D7%95%D7%99_%D7%91%D7%9E%D7%A7%D7%A8%D7%94_%D7%A9%D7%9C_%D7%98%D7%99%D7%A1%D7%94_%D7%A9%D7%94%D7%AA%D7%91%D7%98%D7%9C%D7%94' },
   ],
   notes: [
-    'Amounts are index-linked and change; they are left blank until you enter the current table.',
+    'Amounts are index-linked and change each year; each yearly table is entered with the date it applies from.',
     'Notice periods and alternative-flight reductions under the ASL differ in detail from EU261 and must be checked before approval.',
   ],
 };

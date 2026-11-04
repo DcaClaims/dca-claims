@@ -171,3 +171,26 @@ test('Results record the rule version and say when it is still a draft', () => {
   assert.equal(pick(approved, 'EU261').ruleVersion, 2);
   assert.ok(!pick(approved, 'EU261').flags.some((f) => f.includes('draft')));
 });
+
+test('ASL uses the yearly table in force on the flight date; no table means no amount, never a guess', async () => {
+  const { ASL_V1 } = await import('./ruleSets.ts');
+  const input: AssessmentInput = {
+    sectors: [{ flightNo: 'LY4', operatingCarrier: 'LY', dep: 'JFK', arr: 'TLV', schedDep: '2026-04-20T22:00:00Z', schedArr: '2026-04-21T16:00:00Z' }],
+    singleReservation: true,
+    disruption: { kind: 'delay', sectorIndex: 0, finalArrival: '2026-04-22T03:00:00Z' },
+  };
+  const none = pick(assess(input), 'ASL');
+  assert.equal(none.outcome, 'potentially_covered');
+  assert.equal(none.amount, null);
+  assert.ok(none.missing.some((m) => m.includes('amounts in force on 2026-04-20')));
+
+  const tables = [
+    { from: '2025-01-01', amounts: [111, 222, 333], source: 'test 2025' },
+    { from: '2026-01-01', amounts: [444, 555, 666], source: 'test 2026' },
+  ];
+  const r = pick(assess({ ...input, ruleSets: { ASL: { ...ASL_V1, datedAmounts: tables } } }), 'ASL');
+  assert.equal(r.amount, 666); // over 4,500 km, 2026 table
+  const older = pick(assess({ ...input, sectors: [{ ...input.sectors[0], schedDep: '2025-06-01T22:00:00Z', schedArr: '2025-06-02T16:00:00Z' }],
+    disruption: { ...input.disruption, finalArrival: '2025-06-03T03:00:00Z' }, ruleSets: { ASL: { ...ASL_V1, datedAmounts: tables } } }), 'ASL');
+  assert.equal(older.amount, 333);
+});

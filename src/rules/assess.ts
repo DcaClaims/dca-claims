@@ -145,6 +145,15 @@ function assessOne(rs: RuleSet, view: 'journey' | 'sector', input: AssessmentInp
   // Internal flights over 1,500 km are treated as the middle band, whatever the distance (Art 7(1)(b), 7(2)(b)).
   const bi = internal && km > 1500 && rs.internalOver1500Amount !== undefined ? 1 : bandIndex(rs, km);
   let amount = rs.bands[bi].amount;
+  if (rs.datedAmounts) {
+    const flightDate = (disrupted.schedDep ?? last.schedArr ?? '').slice(0, 10);
+    const table = flightDate
+      ? [...rs.datedAmounts].filter((t) => t.from <= flightDate).sort((a, b) => b.from.localeCompare(a.from))[0]
+      : undefined;
+    amount = table ? table.amounts[bi] ?? null : null;
+    if (table) res.facts.push({ label: 'Amount table', value: `in force from ${table.from}`, source: table.source });
+    else res.missing.push(flightDate ? `${rs.regime} amounts in force on ${flightDate}` : 'flight date, to choose the amount table');
+  }
   if (internal && km > 1500 && rs.internalOver1500Amount !== undefined) {
     amount = rs.internalOver1500Amount;
     res.steps.push(`Distance ${km} km, internal flight over 1,500 km: ${amount} ${rs.currency}.`);
