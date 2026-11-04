@@ -179,7 +179,7 @@ test('ASL uses the yearly table in force on the flight date; no table means no a
     singleReservation: true,
     disruption: { kind: 'delay', sectorIndex: 0, finalArrival: '2026-04-22T03:00:00Z' },
   };
-  const none = pick(assess(input), 'ASL');
+  const none = pick(assess({ ...input, ruleSets: { ASL: { ...ASL_V1, datedAmounts: [] } } }), 'ASL');
   assert.equal(none.outcome, 'potentially_covered');
   assert.equal(none.amount, null);
   assert.ok(none.missing.some((m) => m.includes('amounts in force on 2026-04-20')));
@@ -193,4 +193,27 @@ test('ASL uses the yearly table in force on the flight date; no table means no a
   const older = pick(assess({ ...input, sectors: [{ ...input.sectors[0], schedDep: '2025-06-01T22:00:00Z', schedArr: '2025-06-02T16:00:00Z' }],
     disruption: { ...input.disruption, finalArrival: '2025-06-03T03:00:00Z' }, ruleSets: { ASL: { ...ASL_V1, datedAmounts: tables } } }), 'ASL');
   assert.equal(older.amount, 333);
+});
+
+test('ASL: 2026 amounts from Kol Zchut; wartime periods give no statutory compensation', () => {
+  const base: AssessmentInput = {
+    sectors: [{ flightNo: 'LY4', operatingCarrier: 'LY', dep: 'JFK', arr: 'TLV', schedDep: '2026-04-20T22:00:00Z', schedArr: '2026-04-21T16:00:00Z' }],
+    singleReservation: true,
+    disruption: { kind: 'delay', sectorIndex: 0, finalArrival: '2026-04-22T03:00:00Z' },
+  };
+  assert.equal(pick(assess(base), 'ASL').amount, 3670);
+  const tlvAth: AssessmentInput = { ...base, sectors: [{ flightNo: 'IZ331', operatingCarrier: 'IZ', dep: 'TLV', arr: 'ATH', schedDep: '2026-05-01T08:00:00Z', schedArr: '2026-05-01T10:00:00Z' }],
+    disruption: { kind: 'cancellation', sectorIndex: 0, noticeDays: 1, finalArrival: '2026-05-01T21:00:00Z' } };
+  assert.equal(pick(assess(tlvAth), 'ASL').amount, 1530);
+  // 2025 flight: no table entered yet → not established, not a guess
+  const old = pick(assess({ ...base, sectors: [{ ...base.sectors[0], schedDep: '2025-04-20T22:00:00Z', schedArr: '2025-04-21T16:00:00Z' }], disruption: { ...base.disruption, finalArrival: '2025-04-22T03:00:00Z' } }), 'ASL');
+  assert.equal(old.amount, null);
+  // Cancelled 14 April 2024: inside a wartime exclusion period
+  const war = pick(assess({ ...tlvAth, sectors: [{ ...tlvAth.sectors[0], schedDep: '2024-04-14T08:00:00Z', schedArr: '2024-04-14T10:00:00Z' }], disruption: { ...tlvAth.disruption, finalArrival: '2024-04-15T10:00:00Z' } }), 'ASL');
+  assert.equal(war.outcome, 'not_covered');
+  // Jan 2024: excluded only if notified 3+ days ahead
+  const jan = (n: number | null) => pick(assess({ ...tlvAth, sectors: [{ ...tlvAth.sectors[0], schedDep: '2024-01-10T08:00:00Z', schedArr: '2024-01-10T10:00:00Z' }], disruption: { ...tlvAth.disruption, noticeDays: n, finalArrival: '2024-01-11T10:00:00Z' } }), 'ASL').outcome;
+  assert.equal(jan(5), 'not_covered');
+  assert.equal(jan(1), 'potentially_covered');
+  assert.equal(jan(null), 'insufficient_information');
 });

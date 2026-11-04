@@ -179,6 +179,23 @@ function assessOne(rs: RuleSet, view: 'journey' | 'sector', input: AssessmentInp
     res.steps.push(why);
   };
 
+  // Periods when the law itself removes statutory compensation (e.g. ASL wartime provisions).
+  const flightDay = (disrupted.schedDep ?? last.schedArr ?? '').slice(0, 10);
+  const period = flightDay
+    ? rs.noCompensationPeriods?.find((p) => flightDay >= p.from && flightDay <= p.to &&
+        (p.minNoticeDays === undefined || (d.kind === 'cancellation' && (d.noticeDays ?? -1) >= p.minNoticeDays)))
+    : undefined;
+  if (period) {
+    res.outcome = 'not_covered';
+    res.steps.push(`Flight date ${flightDay} falls in ${period.from} – ${period.to} (${period.why}): no statutory compensation. Damages such as non-refundable hotels may still be claimable.`);
+    return finish(res, input);
+  }
+  const partial = rs.noCompensationPeriods?.find((p) => p.minNoticeDays !== undefined && flightDay >= p.from && flightDay <= p.to);
+  if (partial && d.kind === 'cancellation' && (d.noticeDays === null || d.noticeDays === undefined)) {
+    res.missing.push(`when the cancellation was notified (${partial.why})`);
+    return finish(res, input);
+  }
+
   switch (d.kind) {
     case 'delay':
     case 'missed_connection': {

@@ -28,6 +28,11 @@ export type RuleSet = {
    * When present, these replace the band amounts.
    */
   datedAmounts?: { from: string; amounts: (number | null)[]; source: string }[];
+  /** Periods when statutory compensation is not due (e.g. ASL Swords of Iron emergency provisions). Dates are flight dates, inclusive. */
+  noCompensationPeriods?: { from: string; to: string; minNoticeDays?: number; why: string }[];
+  /** Days the airline has to pay after a written claim, and the limitation period, for deadlines. */
+  airlinePaymentDays?: number;
+  limitationYears?: number;
   sources: { title: string; url: string }[];
   notes: string[];
 };
@@ -102,8 +107,21 @@ export const ASL_V1: RuleSet = {
   ],
   delayThresholdMin: 480,
   delayCountsAsCancellationMin: 480,
-  // Filled in by the owner from the yearly table on Kol Zchut ("פיצוי במקרה של טיסה שהתבטלה"). Empty until then.
-  datedAmounts: [],
+  // From the Kol Zchut page "פיצוי במקרה של טיסה שהתבטלה" (page updated 7 Oct 2026), pasted by the owner 4 Nov 2026.
+  // Start date ASSUMED to be 1 Jan 2026 (yearly indexation) — to confirm. Earlier years: to be added.
+  datedAmounts: [
+    { from: '2026-01-01', amounts: [1530, 2450, 3670], source: 'Kol Zchut, cancelled-flight compensation, updated 7 Oct 2026' },
+  ],
+  reroutingReductionWithinMin: { 0: 120, 1: 180, 2: 240 },
+  noCompensationPeriods: [
+    { from: '2023-10-07', to: '2023-11-30', why: 'Swords of Iron emergency provisions' },
+    { from: '2024-04-12', to: '2024-04-18', why: 'Swords of Iron emergency provisions' },
+    { from: '2024-08-03', to: '2024-08-08', why: 'Swords of Iron emergency provisions' },
+    { from: '2024-10-01', to: '2024-10-05', why: 'Swords of Iron emergency provisions' },
+    { from: '2023-12-01', to: '2024-02-29', minNoticeDays: 3, why: 'Swords of Iron emergency provisions (cancellation notified at least 3 days ahead)' },
+  ],
+  airlinePaymentDays: 45,
+  limitationYears: 4,
   cancellationNotice: EU_CANCELLATION,
   sources: [
     { title: 'Aviation Services Law (Compensation and Assistance for Flight Cancellation or Change of Conditions), 5772-2012', url: '' }, // official link to be added when the text is checked
@@ -111,7 +129,9 @@ export const ASL_V1: RuleSet = {
   ],
   notes: [
     'Amounts are index-linked and change each year; each yearly table is entered with the date it applies from.',
-    'Notice periods and alternative-flight reductions under the ASL differ in detail from EU261 and must be checked before approval.',
+    'Notice periods (14 / 7 days; 2h-4h and 1h-2h rerouting windows) match EU261. Rerouted arrival within 2h / 3h / 4h by band: half compensation.',
+    'No compensation for strikes, avoiding Shabbat or a festival, special circumstances outside the airline\'s control, or an emergency (e.g. airspace closure in the war with Iran). Damages may still be claimable.',
+    'Airline must pay compensation within 45 days of the written claim (refunds 21 days). Limitation 4 years. Section 11: up to 12,240 NIS without proof of damage. Small claims limit 39,900 NIS (Jan 2026).',
   ],
 };
 
