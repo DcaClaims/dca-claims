@@ -166,7 +166,7 @@ function assessOne(rs: RuleSet, view: 'journey' | 'sector', input: AssessmentInp
     // In the sector view the measured arrival is only meaningful if the disrupted flight was the last one.
     if (view === 'journey' || d.sectorIndex === sectors.length - 1) {
       delayMin = minutesBetween(d.finalArrival, schedArr);
-      res.facts.push({ label: 'Arrival delay', value: fmtMin(delayMin), source: `${d.finalArrivalSource ?? 'arrival time on file'} vs scheduled ${schedArr}` });
+      res.facts.push({ label: 'Arrival delay', value: fmtMin(delayMin), source: `${d.finalArrivalSource ?? 'arrival time on file'}; scheduled ${schedArr.slice(0, 10)} ${schedArr.slice(11, 16)} UTC` });
     }
   }
 

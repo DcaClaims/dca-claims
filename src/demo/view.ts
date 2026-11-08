@@ -121,10 +121,10 @@ export function today(): TodayItem[] {
       const window = d.kind === 'limitation' ? 60 : 14;
       if ((Date.parse(d.due) - Date.parse(day(now()))) / 86_400_000 > window) continue;
       if (d.kind === 'client_chase') continue;
-      items.push({ group: 'deadline', title: `${c.title}: ${labelDeadline(d.kind)}`, detail: d.basis, due: d.due, href: `/cases/${c.record.claimId}`, urgency: u });
+      items.push({ group: 'deadline', title: `${c.title}: ${labelDeadline(d.kind).toLowerCase()}`, detail: d.basis, due: d.due, href: `/cases/${c.record.claimId}`, urgency: u });
     }
     if (c.waitingOnUsSince) {
-      items.push({ group: 'client_waiting', title: `${c.clientName} is waiting for a reply`, detail: `since ${c.waitingOnUsSince}`, due: c.nextActionDue, href: `/cases/${c.record.claimId}`, urgency: urgency(c.nextActionDue) });
+      items.push({ group: 'client_waiting', title: `${c.clientName} is waiting for a reply`, detail: `waiting since ${c.waitingOnUsSince}`, due: c.nextActionDue, href: `/cases/${c.record.claimId}`, urgency: urgency(c.nextActionDue) });
     }
     for (const d of c.deadlines.filter((x) => x.kind === 'client_chase')) {
       items.push({ group: 'chase', title: `${c.title}: ${c.nextAction}`, detail: d.basis, due: d.due, href: `/cases/${c.record.claimId}`, urgency: urgency(d.due) });
@@ -156,7 +156,7 @@ export function today(): TodayItem[] {
 }
 
 export function labelDeadline(k: string) {
-  return ({ airline_followup: 'airline payment deadline', adr: 'escalation deadline', limitation: 'legal time limit', client_chase: 'chase client' } as Record<string, string>)[k] ?? k;
+  return ({ airline_followup: 'Airline payment deadline', adr: 'Escalation deadline', limitation: 'Legal time limit', client_chase: 'Chase client' } as Record<string, string>)[k] ?? k;
 }
 
 export function health() {

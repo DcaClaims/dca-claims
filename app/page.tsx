@@ -33,10 +33,10 @@ export default function TodayPage() {
       <div className="list">
         {items.map((i, n) => (
           <Link key={n} href={i.href} className="row">
-            <span className={`dot ${i.urgency}`} title={i.urgency} />
+            <span className={`dot ${i.group === 'alert' ? 'overdue' : i.urgency}`} title={i.urgency} />
             <span className="grow">
               <span className="title">{i.title}</span>
-              <span className="sub" style={{ display: 'block' }}>{GROUP_LABEL[i.group]} · {i.detail}</span>
+              <span className="sub" style={{ display: 'block' }}>{GROUP_LABEL[i.group]} · {i.detail.replace(/(\d{4}-\d{2}-\d{2})/g, (d) => fmtDate(d))}</span>
             </span>
             {i.due ? <span className="right">{i.urgency === 'overdue' ? 'Overdue ' : 'Due '}{fmtDate(i.due)}</span> : null}
           </Link>

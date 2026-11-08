@@ -53,6 +53,7 @@ function datesIn(text: string): { raw: string; iso: string }[] {
   for (const m of text.matchAll(/\b(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/gi))
     out.push({ raw: m[0], iso: `${m[3]}-${pad(MONTHS[m[1].toLowerCase()])}-${pad(+m[2])}` });
   for (const m of text.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b/g)) out.push({ raw: m[0], iso: m[0] });
+  for (const m of text.matchAll(/\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/g)) out.push({ raw: m[0], iso: `${m[3]}-${pad(+m[2])}-${pad(+m[1])}` }); // 17.10.2026 (Hebrew letters)
   for (const m of text.matchAll(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g)) out.push({ raw: m[0], iso: `${m[3]}-${pad(+m[2])}-${pad(+m[1])}` }); // UK/IL order
   return out;
 }

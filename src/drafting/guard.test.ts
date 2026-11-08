@@ -42,3 +42,9 @@ test('evidence blocks cannot be closed early by the text inside them', () => {
   assert.equal(out.split('═══ EVIDENCE END ═══').length - 1, 1); // only one real fence
   assert.ok(!/<system>/i.test(out));
 });
+
+test('Hebrew-style numeric dates (17.10.2026) are checked too', () => {
+  const facts: CaseFacts = { claimId: 'x', identifiers: [], amounts: [], dates: [{ iso: '2026-10-17', what: 'filed' }] };
+  assert.deepEqual(checkDraft('הגשנו ב-17.10.2026', facts, []), []);
+  assert.equal(checkDraft('ישולם עד 1.12.2026', facts, [])[0].kind, 'unsupported_date');
+});
