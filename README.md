@@ -13,17 +13,20 @@ the Airtable importer are built on top of it once hosting accounts exist.
 | `src/mail` | Sorts incoming mail (case, new enquiry, spam, unrelated, uncertain) and matches it to cases. Uncertain mail is never forced into a case. Flags suspicious content and lookalike senders. |
 | `src/drafting` | Wraps outside content as evidence for the AI, and checks drafts for other cases' data and unsupported amounts or dates. |
 | `src/sending` | The only way anything leaves: pause, sending stage (A/B/C), exact approval, stale-approval check, one sender per case, duplicate key, "uncertain" handling. |
-| `data` | Airport coordinates (OurAirports, public domain) and carrier licences (draft). |
+| `data` | Airport coordinates (OurAirports, public domain) and carrier licences (draft), as code modules. |
+| `app` | The web screens (Next.js): Today, Inbox, message detail, Cases, case page, Approvals. Currently on made-up demo data from `src/demo`. |
 | `docs` | Airtable import mapping. |
 
 ## Running
 
 Requires Node 22.18+ (runs TypeScript directly) and, for the schema test, Postgres 16 binaries.
+Every push to GitHub runs the tests, builds the app and publishes screenshots to the `screenshots` branch.
 
 ```
 npm test          # unit tests
 npm run db:test   # schema tests
 npm run typecheck
+npm run dev       # the screens, on http://localhost:3000
 ```
 
 ## Status
