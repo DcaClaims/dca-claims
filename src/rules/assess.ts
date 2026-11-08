@@ -2,18 +2,15 @@
 // Principles (from the design): every result shows its working; missing facts give
 // "insufficient_information", never "not_covered"; anything uncertain is flagged for review, not decided.
 
-import { readFileSync } from 'node:fs';
 import { airport, greatCircleKm, inEU261Territory, inIsrael, inUK, AIRPORT_SOURCE, type Airport } from './geo.ts';
 import { RULE_SETS, type RuleSet } from './ruleSets.ts';
 
-export type Licence = 'EU' | 'UK' | 'OTHER' | 'AMBIGUOUS' | 'UNKNOWN';
+import { CARRIERS, type Licence } from '../../data/carriers.ts';
+export type { Licence };
 
-const carrierFile = JSON.parse(readFileSync(new URL('../../data/carriers.json', import.meta.url), 'utf8')) as {
-  carriers: Record<string, Licence>;
-};
 export function carrierLicence(code: string | null | undefined): Licence {
   if (!code) return 'UNKNOWN';
-  return carrierFile.carriers[code.trim().toUpperCase()] ?? 'UNKNOWN';
+  return CARRIERS[code.trim().toUpperCase()] ?? 'UNKNOWN';
 }
 
 export type SectorInput = {

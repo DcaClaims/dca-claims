@@ -1,23 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { AIRPORTS, AIRPORT_SOURCE_TEXT } from '../../data/airports.ts';
 
 export type Airport = { iata: string; name: string; country: string; lat: number; lon: number };
 
-type AirportFile = { source: string; retrieved: string; airports: Record<string, [string, string, number, number]> };
-
-let cache: AirportFile | null = null;
-function load(): AirportFile {
-  if (!cache) {
-    const url = new URL('../../data/airports.json', import.meta.url);
-    cache = JSON.parse(readFileSync(url, 'utf8')) as AirportFile;
-  }
-  return cache;
-}
-
-export const AIRPORT_SOURCE = () => `${load().source} (retrieved ${load().retrieved})`;
+export const AIRPORT_SOURCE = () => AIRPORT_SOURCE_TEXT;
 
 export function airport(iata: string): Airport | null {
   const code = iata.trim().toUpperCase();
-  const row = load().airports[code];
+  const row = AIRPORTS[code];
   if (!row) return null;
   return { iata: code, name: row[0], country: row[1], lat: row[2], lon: row[3] };
 }

@@ -1,7 +1,10 @@
 name: checks
 on:
   push:
+    branches-ignore: [screenshots]
   pull_request:
+permissions:
+  contents: write
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -19,10 +22,12 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - name: Type check
-        run: npx tsc -p .
       - name: Unit tests
         run: npm test
+      - name: Build the web app
+        run: npm run build
+      - name: Type check
+        run: npx tsc -p .
       - name: Database schema tests
         env:
           PGHOST: localhost
@@ -31,3 +36,23 @@ jobs:
         run: |
           for f in db/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
           for f in db/tests/*.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
+      - name: Screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+          (npm start > server.log 2>&1 &)
+          for i in $(seq 1 30); do curl -sf http://localhost:3000 >/dev/null && break; sleep 1; done
+          mkdir -p screens
+          node scripts/screens.mjs 2>&1 | tee screens/REPORT.txt
+          cp server.log screens/server.log || true
+      - name: Publish screenshots to the "screenshots" branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd screens
+          git init -q
+          git config user.name "screens-bot"
+          git config user.email "screens-bot@users.noreply.github.com"
+          git checkout -q -b screenshots
+          git add -A
+          git commit -qm "Screens for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screenshots

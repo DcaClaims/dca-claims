@@ -8,12 +8,22 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "node --test \"src/**/*.test.ts\"",
     "db:test": "bash scripts/test-schema.sh",
     "typecheck": "tsc -p ."
   },
   "devDependencies": {
     "typescript": "^6.0.2",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
+  },
+  "dependencies": {
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   }
 }
