@@ -290,7 +290,9 @@ export function assess(input: AssessmentInput): Assessment {
   const sets = { ...RULE_SETS, ...input.ruleSets };
   const multi = input.sectors.length > 1;
   const views: ('journey' | 'sector')[] =
-    !multi ? ['journey'] : input.singleReservation === true ? ['journey', 'sector'] : input.singleReservation === false ? ['sector'] : ['journey', 'sector'];
+    // One booking = one journey (owner's practice, 9 Nov 2026). The flight-by-flight view is shown only when the booking
+    // is separate tickets, or when that is not established.
+    !multi ? ['journey'] : input.singleReservation === true ? ['journey'] : input.singleReservation === false ? ['sector'] : ['journey', 'sector'];
 
   const results: RegimeResult[] = [];
   for (const regime of ['EU261', 'UK261', 'ASL'] as const) {
@@ -300,17 +302,6 @@ export function assess(input: AssessmentInput): Assessment {
   const flags: string[] = [];
   if (multi && input.singleReservation === null) {
     flags.push('Not established whether the flights were one reservation: both the whole journey and the disrupted flight alone are shown');
-  }
-  if (multi && input.singleReservation === true) {
-    // The journey view is the default for a single reservation; flag regimes where the views disagree.
-    for (const regime of ['EU261', 'UK261', 'ASL'] as const) {
-      const j = results.find((r) => r.regime === regime && r.view === 'journey')!;
-      const s = results.find((r) => r.regime === regime && r.view === 'sector')!;
-      if (j.outcome !== s.outcome || j.amount !== s.amount) {
-        flags.push(`${regime}: the whole journey (${label(j)}) and the disrupted flight alone (${label(s)}) give different answers; review which applies`);
-        j.needsReview = s.needsReview = true;
-      }
-    }
   }
   const coveredRegimes = [...new Set(results.filter((r) => r.outcome === 'potentially_covered').map((r) => r.regime))];
   if (coveredRegimes.length > 1) {

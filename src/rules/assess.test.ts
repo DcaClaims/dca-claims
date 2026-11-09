@@ -55,17 +55,15 @@ test('De Jong: TLV→MUC→MAN, MUC→MAN cancelled on the day, arrived 8h50 lat
     disruption: { kind: 'cancellation', sectorIndex: 1, noticeDays: 0, finalArrival: '2024-07-22T02:00:00Z', finalArrivalSource: 'Eurowings EW2470 booking' },
   };
   const a = assess(input);
-  // EU261: the whole journey (Tel Aviv → Manchester) is outside EU261, but the cancelled flight departs Munich.
-  assert.equal(pick(a, 'EU261', 'journey').outcome, 'not_covered');
-  assert.equal(pick(a, 'EU261', 'sector').outcome, 'potentially_covered');
-  assert.equal(pick(a, 'EU261', 'sector').amount, 250);
-  // UK261: Tel Aviv → Manchester on an EU carrier is in scope as a whole journey, over 3,500 km.
-  assert.equal(pick(a, 'UK261', 'journey').amount, 520);
-  assert.equal(pick(a, 'UK261', 'sector').outcome, 'not_covered');
-  // Different answers → must be reviewed, not decided.
-  assert.ok(a.flags.some((f) => f.startsWith('EU261: the whole journey')));
-  assert.ok(a.flags.some((f) => f.startsWith('UK261: the whole journey')));
-  assert.equal(a.needsReview, true);
+  // One booking = one journey (owner's practice): only the whole-journey view is shown.
+  assert.equal(a.results.every((r) => r.view === 'journey'), true);
+  // EU261: Tel Aviv → Manchester neither starts nor ends in the EU since Brexit.
+  assert.equal(pick(a, 'EU261').outcome, 'not_covered');
+  // UK261: arrives in the UK from outside the UK/EU on an EU carrier, over 3,500 km.
+  assert.equal(pick(a, 'UK261').amount, 520);
+  // ASL also applies (departs Israel): flagged so you choose one, but no "review which applies" noise.
+  assert.ok(a.flags.some((f) => f.startsWith('More than one regime may apply (UK261, ASL)')));
+  assert.ok(!a.flags.some((f) => f.includes('give different answers')));
   // Distance is shown in the working.
   assert.ok(pick(a, 'UK261').facts.some((f) => f.label === 'Great-circle distance' && /3,7\d\d km/.test(f.value)));
 });

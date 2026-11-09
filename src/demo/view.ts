@@ -34,7 +34,11 @@ export function headline(c: DemoCase) {
     a.results.find((r) => r.outcome === 'insufficient_information') ??
     a.results[0];
   const paying = c.passengers.filter((p) => !p.isInfant).length;
-  return { result: pick, perPassenger: pick.amount, total: pick.amount === null ? null : pick.amount * paying, paying, needsReview: a.needsReview };
+  // Once you've chosen which law to pursue, "more than one law may apply" is no longer something to review.
+  const flags = c.regimePursued ? a.flags.filter((f) => !f.startsWith('More than one regime')) : a.flags;
+  const alternatives = c.regimePursued ? covered.filter((r) => r.regime !== pick.regime) : [];
+  return { result: pick, perPassenger: pick.amount, total: pick.amount === null ? null : pick.amount * paying, paying, flags, alternatives,
+    needsReview: flags.length > 0 || a.results.some((r) => r.needsReview && r.outcome === 'potentially_covered') };
 }
 
 export type InboxItem = {
