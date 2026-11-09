@@ -15,6 +15,7 @@ const pages = [
   ['cases', '/cases'],
   ['case-adler-connection', '/cases/c1001'],
   ['case-katz-hebrew', '/cases/c1002'],
+  ['case-new-lead', '/cases/c1007'],
   ['approvals', '/approvals'],
 ];
 

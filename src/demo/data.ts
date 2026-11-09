@@ -5,6 +5,8 @@ import type { AssessmentInput } from '../rules/assess.ts';
 import type { CaseRecord, Directory, IncomingMessage } from '../mail/types.ts';
 import type { CaseFacts } from '../drafting/guard.ts';
 import type { FormSubmission } from '../intake/lead.ts';
+import type { AcceptanceInput } from '../intake/acceptance.ts';
+import type { Recipient } from '../drafting/style.ts';
 
 export const DEMO_NOW = '2026-11-08T12:00:00Z';
 
@@ -26,6 +28,12 @@ export type DemoCase = {
   facts: CaseFacts;
   notes?: string;
   waitingOnUsSince?: string; // client has been waiting for our reply since
+  /** When the client accepted the T&Cs and fee; null = not yet. */
+  terms: { acceptedOn: string | null; fee: string };
+  /** A new lead waiting for your accept / decline decision. */
+  isLead?: boolean;
+  acceptanceExtras?: Partial<Pick<AcceptanceInput, 'warRelated' | 'airlineCitesWeatherOrSimilar' | 'baggageOnly' | 'notOurLine'>>;
+  uploadLink?: string;
 };
 
 export const DIRECTORY: Directory = {
@@ -41,6 +49,7 @@ export const DIRECTORY: Directory = {
 
 export const CASES: DemoCase[] = [
   {
+    terms: { acceptedOn: '2026-09-20', fee: '25% no win no fee' },
     title: 'Adler v Lufthansa',
     status: 'Claim filed to airline',
     clientName: 'Rivka Adler',
@@ -81,6 +90,7 @@ export const CASES: DemoCase[] = [
     },
   },
   {
+    terms: { acceptedOn: '2026-10-15', fee: '25% no win no fee' },
     title: 'Katz family v El Al',
     status: 'Claim filed to airline',
     clientName: 'Daniel Katz',
@@ -119,9 +129,11 @@ export const CASES: DemoCase[] = [
     notes: 'Infant (Lia) flagged: check whether a fare was paid before claiming for her.',
   },
   {
+    terms: { acceptedOn: '2026-10-25', fee: '25% no win no fee' },
     title: 'Green v Ryanair',
     status: 'Awaiting claim documents',
     clientName: 'Sarah Green',
+    uploadLink: 'https://claims.dcaclaims.com/u/demo-7f3k2q',
     language: 'en',
     passengers: [{ name: 'Sarah Green' }],
     record: {
@@ -140,6 +152,7 @@ export const CASES: DemoCase[] = [
     facts: { claimId: 'c1003', identifiers: ['R7GHQ2', 'sgreen@example.com', 'Sarah Green'], amounts: [], dates: [{ iso: '2026-10-02', what: 'flight' }] },
   },
   {
+    terms: { acceptedOn: '2026-08-30', fee: '25% no win no fee' },
     title: 'Baker v British Airways',
     status: 'Claim filed to airline',
     clientName: 'Tom Baker',
@@ -173,6 +186,7 @@ export const CASES: DemoCase[] = [
     },
   },
   {
+    terms: { acceptedOn: '2026-09-29', fee: '25% no win no fee' },
     title: 'Levi v El Al (TLV–ATH)',
     status: 'Claim filed to airline',
     clientName: 'Yael Levi',
@@ -195,6 +209,7 @@ export const CASES: DemoCase[] = [
     facts: { claimId: 'c1005', identifiers: ['LV3ATH', 'yael.levi@example.org', 'Yael Levi'], amounts: [{ value: 1530, currency: 'ILS', what: 'ASL' }], dates: [{ iso: '2026-07-02', what: 'flight' }] },
   },
   {
+    terms: { acceptedOn: '2026-05-19', fee: '25% no win no fee' },
     title: 'Levi v Lufthansa (FRA–TLV)',
     status: 'Escalated',
     clientName: 'Yael Levi',
@@ -215,8 +230,37 @@ export const CASES: DemoCase[] = [
     deadlines: [{ kind: 'adr', due: '2026-12-01', basis: 'check PACT progress' }],
     documents: [{ name: 'Booking LV9FRA.pdf', kind: 'booking', received: '2026-05-20' }, { name: 'PACT tear-off slip (signed).pdf', kind: 'signed_form', received: '2026-09-02' }],
     facts: { claimId: 'c1006', identifiers: ['LV9FRA', 'PACT-4471020', 'yael.levi@example.org', 'Yael Levi'], amounts: [{ value: 400, currency: 'EUR', what: 'EU261' }], dates: [{ iso: '2026-05-10', what: 'flight' }] },
+  },];
+
+CASES.push({
+  terms: { acceptedOn: null, fee: '25% no win no fee' },
+  isLead: true,
+  uploadLink: 'https://claims.dcaclaims.com/u/demo-m0rr15',
+  title: 'Morris v easyJet (new lead)',
+  status: 'New lead: your decision',
+  clientName: 'James Morris',
+  language: 'en',
+  passengers: [{ name: 'James Morris' }, { name: 'Emma Morris' }],
+  record: {
+    claimId: 'c1007', ref: 1007, airline: 'U2', clientEmails: ['j.morris88@example.com'], passengerNames: ['James Morris'],
+    flightNos: [], open: true, messageIds: ['<newlead@gmail.com>'],
   },
-];
+  assessment: {
+    sectors: [{ flightNo: 'U2 2213', operatingCarrier: 'U2', dep: 'LTN', arr: 'PMI', schedDep: '2026-11-02T06:00:00Z', schedArr: '2026-11-02T08:30:00Z' }],
+    singleReservation: true,
+    disruption: { kind: 'delay', sectorIndex: 0, finalArrival: '2026-11-02T14:35:00Z', finalArrivalSource: 'client\'s email (about 6 hours); flight data to confirm' },
+  },
+  nextAction: 'Accept or decline',
+  nextActionDue: '2026-11-08',
+  deadlines: [],
+  documents: [],
+  facts: {
+    claimId: 'c1007',
+    identifiers: ['j.morris88@example.com', 'James Morris'],
+    amounts: [{ value: 220, currency: 'GBP', what: 'UK261 per passenger' }, { value: 440, currency: 'GBP', what: 'UK261, 2 passengers' }],
+    dates: [{ iso: '2026-11-02', what: 'flight' }],
+  },
+});
 
 export const MESSAGES: (IncomingMessage & { receivedAt: string })[] = [
   {
@@ -277,11 +321,11 @@ export type DemoDraft = {
   language: Language;
   basedOnVersion: number; // the case version when drafted / approved
   approved?: boolean;
-  kind: 'airline' | 'client' | 'authority';
+  kind: Recipient;
 };
 
 /** Current version of each case. A draft based on an older version is stale. */
-export const CASE_VERSIONS: Record<string, number> = { c1001: 7, c1002: 4, c1003: 3, c1004: 5, c1005: 2, c1006: 3 };
+export const CASE_VERSIONS: Record<string, number> = { c1001: 7, c1002: 4, c1003: 3, c1004: 5, c1005: 2, c1006: 3, c1007: 1 };
 
 export const DRAFTS: DemoDraft[] = [
   {
@@ -296,7 +340,7 @@ export const DRAFTS: DemoDraft[] = [
       '',
       'Please provide, within 14 days, the METAR reports and the ATC slot records for BA1442 on 21 August 2026, and an explanation of the measures taken. Otherwise, please pay compensation of £220.',
       '',
-      'If we do not receive the evidence or payment within 14 days, we will refer the claim to CEDR without further notice.',
+      'If we do not receive the evidence or payment within 14 days, we will refer the claim to CEDR and issue legal proceedings without further notice.',
       '',
       'Yours faithfully,',
       'Aaron Hoffman',
@@ -329,7 +373,7 @@ export const DRAFTS: DemoDraft[] = [
       '',
       'Our clients missed their connection in Munich because LH2500 departed earlier than scheduled, and reached Manchester on 15 September 2026, more than 14 hours late. Under UK261 each passenger is entitled to £520, a total of £1,040. We also note that you previously agreed to pay €1,200.',
       '',
-      'Please pay £1,040 within 14 days. Otherwise we will refer the claim to the CAA without further notice.',
+      'Please pay £1,040 within 14 days. Otherwise we will refer the claim to the CAA and issue legal proceedings without further notice.',
       '',
       'Yours faithfully,',
       'Aaron Hoffman',
@@ -337,8 +381,13 @@ export const DRAFTS: DemoDraft[] = [
     ].join('\n'),
   },
   {
-    id: 'd4', claimId: 'c1003', kind: 'client', language: 'en', basedOnVersion: 2, approved: true,
-    to: 'sgreen@example.com', subject: 'Your claim: documents needed',
-    body: 'Hi Sarah,\n\nThanks for getting in touch. To start your claim, please send us your booking confirmation and any emails from Ryanair about the delay.\n\nKind regards,\nAaron\nDCA Claims',
+    id: 'd4', claimId: 'c1003', kind: 'client_upload_request', language: 'en', basedOnVersion: 2, approved: true,
+    to: 'sgreen@example.com', subject: 'Your claim: two documents still needed',
+    body: 'Hi Sarah,\n\nThanks for the receipts. To file your claim with Ryanair we still need:\n\n1. Your booking confirmation\n2. A copy of your passport (Ryanair claims are filed in your name)\n\nPlease upload them here: https://claims.dcaclaims.com/u/demo-7f3k2q\n\nKind regards,\nAaron\nDCA Claims',
+  },
+  {
+    id: 'd5', claimId: 'c1007', inReplyTo: 'm6', kind: 'client_first_reply', language: 'en', basedOnVersion: 1,
+    to: 'j.morris88@example.com', subject: 'Re: Delayed flight from Luton',
+    body: 'Hi James,\n\nThanks for getting in touch. Luton to Palma delayed about 6 hours: it\'s likely you\'re due up to £220 per passenger (£440 for the two of you), depending on the circumstances.\n\nWe charge 25%, no win no fee, so there\'s no risk to you. If you\'d like us to go ahead, please upload your booking confirmation and passports here, where you can also accept our Terms & Conditions:\nhttps://claims.dcaclaims.com/u/demo-m0rr15\n\nIf it\'s easier, you can reply to this email with the documents attached instead, but please confirm in your reply that you accept our Terms & Conditions and the 25% fee.\n\nKind regards,\nAaron\nDCA Claims',
   },
 ];

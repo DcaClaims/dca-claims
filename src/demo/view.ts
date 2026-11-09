@@ -6,6 +6,9 @@ import { matchMessage } from '../mail/match.ts';
 import type { MatchResult } from '../mail/types.ts';
 import { checkDraft, type DraftFlag } from '../drafting/guard.ts';
 import { leadFromEmail, leadFromForm, type LeadDecision } from '../intake/lead.ts';
+import { suggestAcceptance, type AcceptanceAdvice } from '../intake/acceptance.ts';
+import { checkStyle, type StyleFlag } from '../drafting/style.ts';
+import { airport } from '../rules/geo.ts';
 import { CASES, CASE_VERSIONS, DEMO_NOW, DIRECTORY, DRAFTS, FORM_SUBMISSIONS, MESSAGES, type DemoCase, type DemoDraft } from './data.ts';
 
 export const now = () => DEMO_NOW;
@@ -26,7 +29,7 @@ export function assessmentFor(c: DemoCase): Assessment {
 /** The headline figure for a case: the pursued regime's journey-view result (or the best covered one). */
 export function headline(c: DemoCase) {
   const a = assessmentFor(c);
-  const covered = a.results.filter((r) => r.outcome === 'potentially_covered');
+  const covered = a.results.filter((r) => r.outcome === 'potentially_covered').sort((x, y) => Number(x.needsReview) - Number(y.needsReview));
   const pick =
     covered.find((r) => r.regime === c.regimePursued && r.view === 'journey') ??
     covered.find((r) => r.regime === c.regimePursued) ??
@@ -53,18 +56,20 @@ export type InboxItem = {
   lead: LeadDecision;
   classification: MatchResult['classification'] | 'form_review' | 'form_spam' | 'form_lead';
   rtl: boolean;
+  rfc?: string;
 };
 
 const hebrew = /[֐-׿]/;
 
 export function inbox(): InboxItem[] {
-  const records = CASES.map((c) => c.record);
+  // New leads are not yet cases: mail is matched against accepted cases only.
+  const records = CASES.filter((c) => !c.isLead).map((c) => c.record);
   const emails: InboxItem[] = MESSAGES.map((m) => {
     const match = matchMessage(m, records, DIRECTORY);
     return {
       kind: 'email', id: m.id, receivedAt: m.receivedAt, fromName: m.from.name ?? m.from.address, fromAddress: m.from.address,
       subject: m.subject, preview: m.bodyText.slice(0, 140), match, lead: leadFromEmail(match), classification: match.classification,
-      rtl: hebrew.test(m.subject + m.bodyText),
+      rtl: hebrew.test(m.subject + m.bodyText), rfc: m.rfcMessageId,
     };
   });
   const forms: InboxItem[] = FORM_SUBMISSIONS.map((f) => {
@@ -81,10 +86,30 @@ export function inbox(): InboxItem[] {
 
 export const messageById = (id: string) => MESSAGES.find((m) => m.id === id) ?? null;
 
+export function messagesForCase(c: DemoCase): InboxItem[] {
+  return inbox().filter((i) => i.match?.attachTo.some((x) => x.claimId === c.record.claimId) || (i.rfc && c.record.messageIds.includes(i.rfc)));
+}
+
+/** Accept / decline suggestion for a case, from the owner's rules. */
+export function acceptanceFor(c: DemoCase): AcceptanceAdvice {
+  const s = c.assessment.sectors;
+  return suggestAcceptance({
+    assessment: assessmentFor(c),
+    airline: c.record.airline,
+    depCountry: airport(s[0].dep)?.country ?? '',
+    arrCountry: airport(s[s.length - 1].arr)?.country ?? '',
+    passengers: c.passengers.length,
+    ...c.acceptanceExtras,
+  });
+}
+
 export type DraftView = DemoDraft & {
   case: DemoCase;
   flags: DraftFlag[];
+  styleFlags: StyleFlag[];
   stale: boolean;
+  /** A reply to a new lead goes out only when you accept the case. */
+  awaitingAcceptance: boolean;
   state: 'stale' | 'needs_checking' | 'ready';
 };
 
@@ -93,13 +118,17 @@ export function drafts(): DraftView[] {
     const c = caseById(d.claimId)!;
     const others = CASES.filter((x) => x.record.claimId !== d.claimId).map((x) => x.facts);
     const flags = checkDraft(d.body, c.facts, others);
+    const styleFlags = checkStyle(d.kind, d.body, { airline: c.record.airline, clientAcceptedTerms: c.terms.acceptedOn !== null });
     const stale = d.basedOnVersion < (CASE_VERSIONS[d.claimId] ?? 0);
-    return { ...d, case: c, flags, stale, state: stale ? 'stale' : flags.length ? 'needs_checking' : 'ready' };
+    return {
+      ...d, case: c, flags, styleFlags, stale, awaitingAcceptance: !!c.isLead,
+      state: stale ? 'stale' : flags.length || styleFlags.length ? 'needs_checking' : 'ready',
+    };
   });
 }
 
 export type TodayItem = {
-  group: 'alert' | 'deadline' | 'client_waiting' | 'approval' | 'review' | 'chase';
+  group: 'alert' | 'decision' | 'deadline' | 'client_waiting' | 'approval' | 'review' | 'chase';
   title: string;
   detail: string;
   due?: string;
@@ -119,6 +148,10 @@ function urgency(due: string): TodayItem['urgency'] {
 /** What needs the owner today, most important first: legal deadlines, clients waiting, approvals, review, chasing. */
 export function today(): TodayItem[] {
   const items: TodayItem[] = [];
+  for (const c of CASES.filter((x) => x.isLead)) {
+    const a = acceptanceFor(c);
+    items.push({ group: 'decision', title: `New lead: ${c.title.replace(' (new lead)', '')}`, detail: `Suggested: ${SUGGESTION_LABEL[a.suggestion]}. ${a.reasons[0] ?? ''}`, href: `/cases/${c.record.claimId}`, urgency: 'today' });
+  }
   for (const c of CASES) {
     for (const d of c.deadlines) {
       const u = urgency(d.due);
@@ -134,10 +167,10 @@ export function today(): TodayItem[] {
       items.push({ group: 'chase', title: `${c.title}: ${c.nextAction}`, detail: d.basis, due: d.due, href: `/cases/${c.record.claimId}`, urgency: urgency(d.due) });
     }
   }
-  for (const d of drafts()) {
+  for (const d of drafts().filter((x) => !x.awaitingAcceptance)) {
     items.push({
       group: 'approval', title: `Approve: ${d.subject}`, href: '/approvals', urgency: d.state === 'stale' ? 'soon' : 'today',
-      detail: d.state === 'stale' ? 'case changed since this was approved: review again' : d.flags.length ? `${d.flags.length} statement(s) to check` : 'ready to approve',
+      detail: d.state === 'stale' ? 'case changed since this was approved: review again' : d.flags.length + d.styleFlags.length ? `${d.flags.length + d.styleFlags.length} point(s) to check` : 'ready to approve',
     });
   }
   for (const i of inbox()) {
@@ -155,9 +188,13 @@ export function today(): TodayItem[] {
   const review = inbox().filter((i) => i.lead.action === 'review');
   if (review.length) items.push({ group: 'review', title: `${review.length} messages need you to decide`, detail: 'not matched to a case with confidence', href: '/inbox?tab=review', urgency: 'today' });
   const order = { overdue: 0, today: 1, soon: 2, later: 3 };
-  const groupOrder = { alert: 0, deadline: 1, client_waiting: 2, approval: 3, review: 4, chase: 5 };
+  const groupOrder = { alert: 0, deadline: 1, decision: 2, client_waiting: 3, approval: 4, review: 5, chase: 6 };
   return items.sort((a, b) => order[a.urgency] - order[b.urgency] || groupOrder[a.group] - groupOrder[b.group]);
 }
+
+export const SUGGESTION_LABEL: Record<string, string> = {
+  accept: 'accept', offer_to_try: 'offer to try', decline: 'decline', ask_for_details: 'ask for details', your_decision: 'your decision',
+};
 
 export function labelDeadline(k: string) {
   return ({ airline_followup: 'Airline payment deadline', adr: 'Escalation deadline', limitation: 'Legal time limit', client_chase: 'Chase client' } as Record<string, string>)[k] ?? k;

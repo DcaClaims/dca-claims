@@ -4,6 +4,7 @@ import { PageHead, fmtDate } from './_components/ui';
 
 const GROUP_LABEL: Record<TodayItem['group'], string> = {
   alert: 'Security',
+  decision: 'Your decision',
   deadline: 'Deadline',
   client_waiting: 'Client waiting',
   approval: 'Approval',

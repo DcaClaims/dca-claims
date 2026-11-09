@@ -11,6 +11,11 @@ function highlight(body: string, marks: string[]): ReactNode[] {
   return body.split(re).map((part, n) => (marks.includes(part) ? <mark key={n}>{part}</mark> : part));
 }
 
+const KIND_LABEL: Record<string, string> = {
+  airline: 'To airline', authority: 'To authority', client: 'To client', client_first_reply: 'First reply to new lead',
+  client_upload_request: 'Upload request', lawyers: 'To lawyers',
+};
+
 const FLAG_TEXT = {
   other_case_data: 'belongs to another case',
   unsupported_amount: 'amount not in the case record',
@@ -33,9 +38,9 @@ export default function ApprovalsPage() {
         <div key={d.id} id={d.id} className="card">
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
             {d.state === 'stale' ? <Pill tone="warn">Possibly outdated: the case changed after approval</Pill> : null}
-            {d.state === 'needs_checking' ? <Pill tone="bad">{d.flags.length} statement{d.flags.length > 1 ? 's' : ''} to check</Pill> : null}
+            {d.state === 'needs_checking' ? <Pill tone="bad">{d.flags.length + d.styleFlags.length} point{d.flags.length + d.styleFlags.length > 1 ? 's' : ''} to check</Pill> : null}
             {d.state === 'ready' ? <Pill tone="ok">No problems found</Pill> : null}
-            <Pill tone="plain">{d.kind === 'airline' ? 'To airline' : d.kind === 'client' ? 'To client' : 'To authority'}</Pill>
+            <Pill tone="plain">{KIND_LABEL[d.kind]}</Pill>
             {d.language === 'he' ? <Pill tone="plain">Hebrew</Pill> : null}
           </div>
           <h3>{d.subject}</h3>
@@ -45,9 +50,13 @@ export default function ApprovalsPage() {
           {d.flags.map((f, n) => (
             <div key={n} className="flag bad">“{f.text}”: {FLAG_TEXT[f.kind]}</div>
           ))}
+          {d.styleFlags.map((f, n) => (
+            <div key={`s${n}`} className="flag">House style: {f.detail}</div>
+          ))}
+          {d.awaitingAcceptance ? <div className="flag">New lead: this reply goes out only when you accept the case.</div> : null}
           <div className="letter" dir={d.language === 'he' ? 'rtl' : undefined}>{highlight(d.body, d.flags.map((f) => f.text))}</div>
           <div className="btns">
-            <button className="btn primary" disabled>Approve and send</button>
+            <button className="btn primary" disabled>{d.awaitingAcceptance ? 'Accept case and send' : 'Approve and send'}</button>
             <button className="btn" disabled>Edit</button>
             <button className="btn" disabled>Discard</button>
           </div>

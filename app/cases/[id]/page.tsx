@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { assessmentFor, caseById, drafts, headline, inbox, labelDeadline } from '../../../src/demo/view.ts';
+import { SUGGESTION_LABEL, acceptanceFor, assessmentFor, caseById, drafts, headline, labelDeadline, messagesForCase } from '../../../src/demo/view.ts';
 import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '../../_components/ui';
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +9,8 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   if (!c) notFound();
   const a = assessmentFor(c);
   const h = headline(c);
-  const messages = inbox().filter((i) => i.match?.attachTo.some((x) => x.claimId === id));
+  const messages = messagesForCase(c);
+  const advice = c.isLead ? acceptanceFor(c) : null;
   const caseDrafts = drafts().filter((d) => d.claimId === id);
   const sectors = c.assessment.sectors;
 
@@ -23,6 +24,22 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </div>
       </PageHead>
 
+      {advice ? (
+        <div className="card" style={{ borderColor: 'var(--accent)' }}>
+          <h3>Your decision: take this case?</h3>
+          <p>
+            Suggested: <Pill tone={advice.suggestion === 'accept' ? 'ok' : advice.suggestion === 'decline' ? 'bad' : 'warn'}>{SUGGESTION_LABEL[advice.suggestion]}</Pill>
+          </p>
+          <ul className="steps">{advice.reasons.map((r, n) => <li key={n}>{r}</li>)}</ul>
+          <div className="btns">
+            <button className="btn primary" disabled title="Demo: nothing is saved or sent">Accept and send first reply</button>
+            <button className="btn" disabled title="Demo: nothing is saved or sent">Decline (polite reply)</button>
+            <button className="btn" disabled title="Demo: nothing is saved or sent">Ask for details</button>
+          </div>
+          <p className="why">Nothing goes to a new client until you decide. The first reply is ready under Drafts.</p>
+        </div>
+      ) : null}
+
       <div className="grid2">
         <div className="card">
           <h3>Booking</h3>
@@ -33,6 +50,8 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
               {c.record.airlineCaseRef ? <tr><td>Airline reference</td><td>{c.record.airlineCaseRef}</td></tr> : null}
               {c.record.authorityCaseRef ? <tr><td>Authority reference</td><td>{c.record.authorityCaseRef}</td></tr> : null}
               <tr><td>Passengers</td><td>{c.passengers.map((p) => p.name + (p.isInfant ? ' (infant)' : '')).join(', ')}</td></tr>
+              <tr><td>T&amp;Cs and fee</td><td>{c.terms.acceptedOn ? <>Accepted {fmtDate(c.terms.acceptedOn)} ({c.terms.fee})</> : <span style={{ color: 'var(--warn)' }}>Not accepted yet</span>}</td></tr>
+              {c.uploadLink ? <tr><td>Upload link</td><td className="small">{c.uploadLink}</td></tr> : null}
             </tbody>
           </table>
         </div>
