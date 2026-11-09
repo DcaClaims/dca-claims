@@ -1,0 +1,55 @@
+name: admin
+# Run by hand (Actions → admin → Run workflow). Uses the SUPABASE_DB_URL secret.
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'What to do'
+        type: choice
+        options: [add_staff, load_demo_cases]
+        required: true
+      email:
+        description: 'add_staff: login email'
+        required: false
+      name:
+        description: 'add_staff: full name'
+        required: false
+      role:
+        description: 'add_staff: role'
+        type: choice
+        options: [owner, caseworker, accounts, readonly]
+        default: owner
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Prepare
+        run: |
+          test -n "$DATABASE_URL" || { echo "SUPABASE_DB_URL secret is not set"; exit 1; }
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          bash scripts/migrate.sh
+      - name: Add staff member
+        if: inputs.task == 'add_staff'
+        env:
+          EMAIL: ${{ inputs.email }}
+          NAME: ${{ inputs.name }}
+          ROLE: ${{ inputs.role }}
+        run: |
+          test -n "$EMAIL" && test -n "$NAME" || { echo "email and name are required"; exit 1; }
+          psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 -v email="$EMAIL" -v name="$NAME" -v role="$ROLE" <<'SQL'
+          insert into users (email, full_name, role) values (lower(:'email'), :'name', :'role')
+            on conflict (email) do update set full_name = excluded.full_name, role = excluded.role, active = true;
+          select email, full_name, role from users where email = lower(:'email');
+          SQL
+      - name: Load the invented demo cases
+        if: inputs.task == 'load_demo_cases'
+        run: |
+          node scripts/demo-seed.ts > seed.sql
+          psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 -f seed.sql
+          psql "$DATABASE_URL" -X -t -c "select count(*) || ' demo cases loaded' from claims where id in (select md5('dca-demo:' || k)::uuid from unnest(array['c1001','c1002','c1003','c1004','c1005','c1006','c1007']) k)"
