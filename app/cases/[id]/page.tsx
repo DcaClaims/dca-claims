@@ -71,7 +71,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
       {a.results.map((r, n) => {
         const o = OUTCOME_LABEL[r.outcome];
         return (
-          <details key={n} className="card" open={r.outcome === 'potentially_covered' && r.view === 'journey'}>
+          <details key={n} className="card" open={r.regime === h.result.regime && r.view === h.result.view}>
             <summary style={{ cursor: 'pointer' }}>
               <b>{r.regime}</b>{a.results.some((x) => x.view === 'sector') && a.results.some((x) => x.view === 'journey') ? (r.view === 'journey' ? ' · whole journey' : ' · disrupted flight only') : ''} · <Pill tone={o.tone}>{o.label}</Pill>
               {r.amount !== null ? <> · {money(r.amount, r.currency)}</> : null}
