@@ -19,9 +19,14 @@ async function audit(actor: string, action: string, entity: string, entityId: st
   await adminClient().from('audit_log').insert({ actor, action, entity, entity_id: entityId, details });
 }
 
-function must<T>(r: { data: T; error: { message: string } | null }, what: string): T {
+function must<T>(r: { data: T; error: { message: string } | null }, what: string): NonNullable<T> {
   if (r.error) throw new Error(`${what}: ${r.error.message}`);
-  return r.data;
+  if (r.data === null || r.data === undefined) throw new Error(`${what}: not found`);
+  return r.data as NonNullable<T>;
+}
+/** For writes, where no rows come back. */
+function ok(r: { error: { message: string } | null }, what: string) {
+  if (r.error) throw new Error(`${what}: ${r.error.message}`);
 }
 
 const done = (path?: string) => {
@@ -39,7 +44,7 @@ export async function decideLead(form: FormData) {
   const decision = String(form.get('decision')) as 'accepted' | 'declined' | 'asked_for_details';
   const db = adminClient();
   const status = decision === 'accepted' ? 'Accepted: awaiting documents' : decision === 'declined' ? 'declined' : 'new_lead';
-  must(await db.from('claims').update({ decision, decided_at: new Date().toISOString(), decided_by: s.id, status }).eq('id', claimId), 'Saving the decision');
+  ok(await db.from('claims').update({ decision, decided_at: new Date().toISOString(), decided_by: s.id, status }).eq('id', claimId), 'Saving the decision');
   if (decision === 'accepted') {
     const drafts = must(await db.from('drafts').select('*').eq('claim_id', claimId).eq('kind', 'client_first_reply').eq('status', 'draft'), 'Finding the first reply');
     for (const d of drafts ?? []) await approveDraftRow(s.id, d.id);
@@ -55,8 +60,8 @@ export async function attachMessage(form: FormData) {
   const claimId = String(form.get('claimId'));
   if (!claimId) throw new Error('Choose a case first.');
   const db = adminClient();
-  must(await db.from('message_claims').upsert({ message_id: messageId, claim_id: claimId, matched_by: 'manual', created_by: s.id }), 'Attaching');
-  must(await db.from('messages').update({ reviewed_by: s.id, reviewed_at: new Date().toISOString(), override: null }).eq('id', messageId), 'Marking reviewed');
+  ok(await db.from('message_claims').upsert({ message_id: messageId, claim_id: claimId, matched_by: 'manual', created_by: s.id }), 'Attaching');
+  ok(await db.from('messages').update({ reviewed_by: s.id, reviewed_at: new Date().toISOString(), override: null }).eq('id', messageId), 'Marking reviewed');
   await audit(s.id, 'message_attached', 'message', messageId, { claimId });
   done(`/inbox/${messageId}`);
 }
@@ -67,7 +72,7 @@ export async function setMessageOverride(form: FormData) {
   const messageId = String(form.get('messageId'));
   const override = String(form.get('override'));
   if (!['spam', 'lead', 'unrelated'].includes(override)) throw new Error('Unknown choice.');
-  must(await adminClient().from('messages').update({ override, reviewed_by: s.id, reviewed_at: new Date().toISOString() }).eq('id', messageId), 'Saving');
+  ok(await adminClient().from('messages').update({ override, reviewed_by: s.id, reviewed_at: new Date().toISOString() }).eq('id', messageId), 'Saving');
   await audit(s.id, `message_${override}`, 'message', messageId);
   done(`/inbox/${messageId}`);
 }
@@ -77,8 +82,8 @@ async function approveDraftRow(userId: string, draftId: string) {
   const d = must(await db.from('drafts').select('*').eq('id', draftId).single(), 'Finding the draft');
   const c = must(await db.from('claims').select('version').eq('id', d.claim_id).single(), 'Finding the case');
   // Approving means you have read it against the case as it is now: pin the approval to the current version.
-  must(await db.from('approvals').insert({ draft_id: draftId, payload_hash: payloadHash(d.to_addresses, d.subject, d.body), claim_version: c.version, approved_by: userId }), 'Recording the approval');
-  must(await db.from('drafts').update({ status: 'approved', based_on_claim_version: c.version }).eq('id', draftId), 'Updating the draft');
+  ok(await db.from('approvals').insert({ draft_id: draftId, payload_hash: payloadHash(d.to_addresses, d.subject, d.body), claim_version: c.version, approved_by: userId }), 'Recording the approval');
+  ok(await db.from('drafts').update({ status: 'approved', based_on_claim_version: c.version }).eq('id', draftId), 'Updating the draft');
   await audit(userId, 'draft_approved', 'draft', draftId, { claimVersion: c.version, stage: 'A (nothing sent)' });
 }
 
@@ -98,8 +103,8 @@ export async function editDraft(form: FormData) {
   const db = adminClient();
   const d = must(await db.from('drafts').select('*').eq('id', draftId).single(), 'Finding the draft');
   if (body.trim() && body !== d.body) {
-    must(await db.from('draft_corrections').insert({ draft_id: draftId, before_body: d.body, after_body: body, kind, note: String(form.get('note') ?? '') || null, user_id: s.id }), 'Keeping the original');
-    must(await db.from('drafts').update({ body, status: 'draft' }).eq('id', draftId), 'Saving the edit');
+    ok(await db.from('draft_corrections').insert({ draft_id: draftId, before_body: d.body, after_body: body, kind, note: String(form.get('note') ?? '') || null, user_id: s.id }), 'Keeping the original');
+    ok(await db.from('drafts').update({ body, status: 'draft' }).eq('id', draftId), 'Saving the edit');
     await db.from('approvals').update({ revoked_at: new Date().toISOString() }).eq('draft_id', draftId).is('revoked_at', null);
     await audit(s.id, 'draft_edited', 'draft', draftId, { kind });
   }
@@ -109,7 +114,7 @@ export async function editDraft(form: FormData) {
 export async function discardDraft(form: FormData) {
   const s = await staffOrThrow();
   const draftId = String(form.get('draftId'));
-  must(await adminClient().from('drafts').update({ status: 'discarded' }).eq('id', draftId), 'Discarding');
+  ok(await adminClient().from('drafts').update({ status: 'discarded' }).eq('id', draftId), 'Discarding');
   await audit(s.id, 'draft_discarded', 'draft', draftId);
   done('/approvals');
 }
