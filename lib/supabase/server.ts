@@ -1,6 +1,8 @@
 import 'server-only';
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+
+type CookieList = { name: string; value: string; options: CookieOptions }[];
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, authConfigured } from './env';
 
@@ -10,7 +12,7 @@ export async function sessionClient() {
   return createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
       getAll: () => store.getAll(),
-      setAll: (list) => {
+      setAll: (list: CookieList) => {
         try {
           for (const { name, value, options } of list) store.set(name, value, options);
         } catch {

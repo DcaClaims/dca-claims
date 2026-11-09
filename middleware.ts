@@ -1,7 +1,9 @@
 // Every page needs a login AND two-step verification (Authy), except the login pages themselves.
 // In demo mode (database not configured) the app is open, showing invented data only.
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+
+type CookieList = { name: string; value: string; options: CookieOptions }[];
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, authConfigured } from './lib/supabase/env';
 
 const PUBLIC = ['/login', '/mfa'];
@@ -13,7 +15,7 @@ export async function middleware(req: NextRequest) {
   const sb = createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
       getAll: () => req.cookies.getAll(),
-      setAll: (list) => {
+      setAll: (list: CookieList) => {
         for (const { name, value } of list) req.cookies.set(name, value);
         res = NextResponse.next({ request: req });
         for (const { name, value, options } of list) res.cookies.set(name, value, options);
