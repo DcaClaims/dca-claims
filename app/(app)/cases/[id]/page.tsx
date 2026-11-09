@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SUGGESTION_LABEL, acceptanceFor, assessmentFor, caseById, drafts, headline, labelDeadline, messagesForCase } from '../../../src/demo/view.ts';
-import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '../../_components/ui';
+import { SUGGESTION_LABEL, acceptanceFor, assessmentFor, caseById, drafts, headline, labelDeadline, messagesForCase } from '@/src/demo/view.ts';
+import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '@/app/_components/ui';
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { allCases, drafts, health, inbox, now, today, type TodayItem } from '../src/demo/view.ts';
-import { PageHead, fmtDate } from './_components/ui';
+import { allCases, drafts, health, inbox, now, today, type TodayItem } from '@/src/demo/view.ts';
+import { PageHead, fmtDate } from '@/app/_components/ui';
 
 const GROUP_LABEL: Record<TodayItem['group'], string> = {
   alert: 'Security',

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { drafts, health } from '../../src/demo/view.ts';
-import { PageHead, Pill } from '../_components/ui';
+import { drafts, health } from '@/src/demo/view.ts';
+import { PageHead, Pill } from '@/app/_components/ui';
 
 /** Highlights each flagged text in the draft so you can see exactly what to check. */
 function highlight(body: string, marks: string[]): ReactNode[] {

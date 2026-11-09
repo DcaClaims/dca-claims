@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { caseById, inbox, messageById } from '../../../src/demo/view.ts';
-import { FORM_SUBMISSIONS } from '../../../src/demo/data.ts';
-import { CLASS_LABEL, PageHead, Pill, fmtDate } from '../../_components/ui';
+import { caseById, inbox, messageById } from '@/src/demo/view.ts';
+import { FORM_SUBMISSIONS } from '@/src/demo/data.ts';
+import { CLASS_LABEL, PageHead, Pill, fmtDate } from '@/app/_components/ui';
 
 const LEAD_LABEL = {
   create_lead: 'Becomes a new lead',

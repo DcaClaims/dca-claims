@@ -131,3 +131,13 @@ table.kv tr:last-child td { border-bottom: 0; }
   .row { padding: 12px; gap: 10px; }
   .row .right { display: none; }
 }
+
+/* Login pages */
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.auth-card { width: 100%; max-width: 400px; }
+.field { display: block; margin: 12px 0; }
+.field span { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+.field input, .field textarea, .field select { width: 100%; font: inherit; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); }
+.field input:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.wide { width: 100%; padding: 10px; }
+.side-foot { position: absolute; bottom: 20px; left: 22px; right: 14px; }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { caseById, inbox, type InboxItem } from '../../src/demo/view.ts';
-import { CLASS_LABEL, PageHead, Pill, fmtDate } from '../_components/ui';
+import { caseById, inbox, type InboxItem } from '@/src/demo/view.ts';
+import { CLASS_LABEL, PageHead, Pill, fmtDate } from '@/app/_components/ui';
 
 const TABS: { key: string; label: string; test: (i: InboxItem) => boolean }[] = [
   { key: 'review', label: 'Needs review', test: (i) => i.lead.action === 'review' },

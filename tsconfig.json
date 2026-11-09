@@ -24,13 +24,21 @@
         "name": "next"
       }
     ],
-    "noUncheckedSideEffectImports": false
+    "noUncheckedSideEffectImports": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
   },
   "include": [
     "next-env.d.ts",
     "src",
     "data",
     "app",
+    "lib",
+    "middleware.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

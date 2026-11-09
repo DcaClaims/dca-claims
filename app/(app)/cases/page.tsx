@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { allCases, headline } from '../../src/demo/view.ts';
-import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '../_components/ui';
+import { allCases, headline } from '@/src/demo/view.ts';
+import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '@/app/_components/ui';
 
 export default function CasesPage() {
   const cases = allCases();
