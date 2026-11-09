@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { MobileNav, SideNav, type NavItem } from '@/app/_components/Nav';
 import { SignOut } from '@/app/_components/SignOut';
-import { drafts, health, inbox } from '@/src/demo/view.ts';
+import { getView } from '@/lib/data/view';
 import { authConfigured } from '@/lib/supabase/env';
 import { currentStaff } from '@/lib/supabase/server';
 
@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  const { drafts, health, inbox, mode } = await getView();
   const review = inbox().filter((i) => i.lead.action === 'review').length;
   const approvals = drafts().length;
   const h = health();
@@ -52,7 +53,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <main className="main">
           <div className="banner">
             <span className="pill stage">Stage {h.sendingStage}: draft only, nothing is sent</span>
-            <span className="pill demo">Demo data: all names and bookings are invented</span>
+            {mode === 'demo' ? <span className="pill demo">Demo data: all names and bookings are invented</span> : <span className="pill ok">Database connected</span>}
             {h.paused ? <span className="pill bad">Paused</span> : null}
           </div>
           {children}

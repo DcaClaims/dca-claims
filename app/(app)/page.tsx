@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { allCases, drafts, health, inbox, now, today, type TodayItem } from '@/src/demo/view.ts';
+import type { TodayItem } from '@/src/demo/view.ts';
+import { getView } from '@/lib/data/view';
 import { PageHead, fmtDate } from '@/app/_components/ui';
 
 const GROUP_LABEL: Record<TodayItem['group'], string> = {
@@ -12,7 +13,8 @@ const GROUP_LABEL: Record<TodayItem['group'], string> = {
   chase: 'Chase',
 };
 
-export default function TodayPage() {
+export default async function TodayPage() {
+  const { allCases, drafts, health, inbox, now, today } = await getView();
   const items = today();
   const h = health();
   const msgs = inbox();

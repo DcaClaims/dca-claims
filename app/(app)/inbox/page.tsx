@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { caseById, inbox, type InboxItem } from '@/src/demo/view.ts';
+import type { InboxItem } from '@/src/demo/view.ts';
+import { getView } from '@/lib/data/view';
 import { CLASS_LABEL, PageHead, Pill, fmtDate } from '@/app/_components/ui';
 
 const TABS: { key: string; label: string; test: (i: InboxItem) => boolean }[] = [
@@ -12,6 +13,7 @@ const TABS: { key: string; label: string; test: (i: InboxItem) => boolean }[] = 
 
 export default async function InboxPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab = 'review' } = await searchParams;
+  const { caseById, inbox } = await getView();
   const all = inbox();
   const current = TABS.find((t) => t.key === tab) ?? TABS[0];
   const items = all.filter(current.test);

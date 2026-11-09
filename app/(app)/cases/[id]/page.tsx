@@ -1,10 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SUGGESTION_LABEL, acceptanceFor, assessmentFor, caseById, drafts, headline, labelDeadline, messagesForCase } from '@/src/demo/view.ts';
+import { SUGGESTION_LABEL, labelDeadline } from '@/src/demo/view.ts';
+import { getView } from '@/lib/data/view';
+import { decideLead } from '@/lib/data/actions';
 import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '@/app/_components/ui';
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { acceptanceFor, assessmentFor, caseById, drafts, headline, messagesForCase, mode } = await getView();
+  const live = mode === 'live';
   const c = caseById(id);
   if (!c) notFound();
   const a = assessmentFor(c);
@@ -31,12 +35,13 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
             Suggested: <Pill tone={advice.suggestion === 'accept' ? 'ok' : advice.suggestion === 'decline' ? 'bad' : 'warn'}>{SUGGESTION_LABEL[advice.suggestion]}</Pill>
           </p>
           <ul className="steps">{advice.reasons.map((r, n) => <li key={n}>{r}</li>)}</ul>
-          <div className="btns">
-            <button className="btn primary" disabled title="Demo: nothing is saved or sent">Accept and send first reply</button>
-            <button className="btn" disabled title="Demo: nothing is saved or sent">Decline (polite reply)</button>
-            <button className="btn" disabled title="Demo: nothing is saved or sent">Ask for details</button>
-          </div>
-          <p className="why">Nothing goes to a new client until you decide. The first reply is ready under Drafts.</p>
+          <form action={decideLead} className="btns">
+            <input type="hidden" name="claimId" value={c.record.claimId} />
+            <button className="btn primary" name="decision" value="accepted" disabled={!live}>Accept and approve first reply</button>
+            <button className="btn" name="decision" value="declined" disabled={!live}>Decline</button>
+            <button className="btn" name="decision" value="asked_for_details" disabled={!live}>Ask for details</button>
+          </form>
+          <p className="why">Nothing goes to a new client until you decide. Stage A: accepting approves the first reply, but nothing is sent.{live ? '' : ' (Demo: buttons work once the database is connected.)'}</p>
         </div>
       ) : null}
 

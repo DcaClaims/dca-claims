@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { drafts, health } from '@/src/demo/view.ts';
+import { getView } from '@/lib/data/view';
+import { approveDraft, discardDraft } from '@/lib/data/actions';
 import { PageHead, Pill } from '@/app/_components/ui';
 
 /** Highlights each flagged text in the draft so you can see exactly what to check. */
@@ -22,7 +23,9 @@ const FLAG_TEXT = {
   unsupported_date: 'date not in the case record',
 };
 
-export default function ApprovalsPage() {
+export default async function ApprovalsPage() {
+  const { drafts, health, mode } = await getView();
+  const live = mode === 'live';
   const list = drafts();
   const h = health();
   const order = { needs_checking: 0, stale: 1, ready: 2 };
@@ -55,14 +58,25 @@ export default function ApprovalsPage() {
           ))}
           {d.awaitingAcceptance ? <div className="flag">New lead: this reply goes out only when you accept the case.</div> : null}
           <div className="letter" dir={d.language === 'he' ? 'rtl' : undefined}>{highlight(d.body, d.flags.map((f) => f.text))}</div>
+          {d.approved && !d.stale ? <div className="flag" style={{ borderLeftColor: 'var(--ok)', background: 'var(--ok-soft)' }}>Approved. In Stage A nothing is sent.</div> : null}
           <div className="btns">
-            <button className="btn primary" disabled>{d.awaitingAcceptance ? 'Accept case and send' : 'Approve and send'}</button>
-            <button className="btn" disabled>Edit</button>
-            <button className="btn" disabled>Discard</button>
+            {d.awaitingAcceptance ? (
+              <Link className="btn primary" href={`/cases/${d.claimId}`}>Decide on the lead first</Link>
+            ) : (
+              <form action={approveDraft}>
+                <input type="hidden" name="draftId" value={d.id} />
+                <button className="btn primary" disabled={!live || (d.approved && !d.stale)}>{d.stale ? 'Re-approve after review' : d.approved ? 'Approved' : 'Approve'}</button>
+              </form>
+            )}
+            {live ? <Link className="btn" href={`/approvals/${d.id}/edit`}>Edit</Link> : <button className="btn" disabled>Edit</button>}
+            <form action={discardDraft}>
+              <input type="hidden" name="draftId" value={d.id} />
+              <button className="btn" disabled={!live}>Discard</button>
+            </form>
           </div>
           <p className="why">
             {h.sendingStage === 'A'
-              ? 'Stage A: approving records your decision, but nothing is sent. Sending starts in Stage B, to test addresses only.'
+              ? `Stage A: approving records your decision, but nothing is sent. Sending starts in Stage B, to test addresses only.${live ? '' : ' (Demo: buttons work once the database is connected.)'}`
               : null}
           </p>
         </div>

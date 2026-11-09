@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { allCases, headline } from '@/src/demo/view.ts';
+import { getView } from '@/lib/data/view';
 import { OUTCOME_LABEL, PageHead, Pill, fmtDate, money } from '@/app/_components/ui';
 
-export default function CasesPage() {
+export default async function CasesPage() {
+  const { allCases, headline } = await getView();
   const cases = allCases();
   return (
     <>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { caseById, inbox, messageById } from '@/src/demo/view.ts';
-import { FORM_SUBMISSIONS } from '@/src/demo/data.ts';
+import { getView } from '@/lib/data/view';
+import { attachMessage, setMessageOverride } from '@/lib/data/actions';
 import { CLASS_LABEL, PageHead, Pill, fmtDate } from '@/app/_components/ui';
 
 const LEAD_LABEL = {
@@ -13,10 +13,12 @@ const LEAD_LABEL = {
 
 export default async function MessagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { allCases, caseById, inbox, messageById, formById, mode } = await getView();
+  const live = mode === 'live';
   const item = inbox().find((i) => i.id === id);
   if (!item) notFound();
   const msg = messageById(id);
-  const form = FORM_SUBMISSIONS.find((f) => f.id === id);
+  const form = formById(id);
   const cls = CLASS_LABEL[item.classification];
   const m = item.match;
 
@@ -68,12 +70,24 @@ export default async function MessagePage({ params }: { params: Promise<{ id: st
             );
           })}
           {!m?.candidates.length ? <p className="muted small">No case matches.</p> : null}
-          {item.lead.action === 'review' ? (
-            <div className="btns">
-              <button className="btn" disabled title="Demo: nothing is saved">Attach to a case…</button>
-              <button className="btn" disabled title="Demo: nothing is saved">Make it a new lead</button>
-              <button className="btn" disabled title="Demo: nothing is saved">Mark as spam</button>
-            </div>
+          {item.kind === 'email' ? (
+            <>
+              <form action={attachMessage} className="btns" style={{ alignItems: 'center' }}>
+                <input type="hidden" name="messageId" value={item.id} />
+                <select name="claimId" className="select" defaultValue={m?.candidates[0]?.claimId ?? ''} disabled={!live}>
+                  <option value="">Attach to case…</option>
+                  {allCases().filter((k) => !k.isLead).map((k) => <option key={k.record.claimId} value={k.record.claimId}>#{k.record.ref} {k.title}</option>)}
+                </select>
+                <button className="btn" disabled={!live}>Attach</button>
+              </form>
+              <form action={setMessageOverride} className="btns">
+                <input type="hidden" name="messageId" value={item.id} />
+                <button className="btn" name="override" value="lead" disabled={!live}>Make it a new lead</button>
+                <button className="btn" name="override" value="unrelated" disabled={!live}>Not about a claim</button>
+                <button className="btn" name="override" value="spam" disabled={!live}>Spam</button>
+              </form>
+              {!live ? <p className="why">Demo: these buttons work once the database is connected.</p> : null}
+            </>
           ) : null}
         </div>
       </div>
